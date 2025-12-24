@@ -1,6 +1,5 @@
 import { firebaseConfig, LOGIN_PINS } from "./firebase-config.js";
 
-// Firebase modular via CDN (รองรับการใช้แบบไฟล์ static ได้) :contentReference[oaicite:4]{index=4}
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
 import {
   getAuth, signInAnonymously, onAuthStateChanged, signOut
@@ -10,14 +9,10 @@ import {
   collection, query, where, orderBy, getDocs,
   runTransaction
 } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
-import {
-  getStorage, ref, uploadBytes, getDownloadURL
-} from "https://www.gstatic.com/firebasejs/11.0.0/firebase-storage.js";
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const storage = getStorage(app);
 
 const el = (id)=>document.getElementById(id);
 const fmt = (n)=>Number(n||0).toFixed(3);
@@ -29,8 +24,7 @@ document.querySelectorAll(".tab").forEach(btn=>{
   btn.addEventListener("click", ()=>{
     document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
     btn.classList.add("active");
-    const tab = btn.dataset.tab;
-    showTab(tab);
+    showTab(btn.dataset.tab);
   });
 });
 
@@ -52,10 +46,8 @@ el("btnLogin").addEventListener("click", async ()=>{
     return;
   }
 
-  // 1) anonymous sign-in เพื่อให้ rules ใช้ request.auth ได้ :contentReference[oaicite:5]{index=5}
   const cred = await signInAnonymously(auth);
 
-  // 2) ผูก role ลง users/{uid} (ให้ role ฝั่ง rules ใช้ได้)
   const name = role === "boss" ? "หัวหน้า" : "ผู้ผลิต";
   await setDoc(doc(db, "users", cred.user.uid), {
     role, name, updatedAt: serverTimestamp()
@@ -83,13 +75,11 @@ onAuthStateChanged(auth, async (user)=>{
   el("loginCard").style.display = "none";
   el("appCard").style.display = "";
 
-  // เปิด/ซ่อนกล่องตาม role
   const isBoss = me.role === "boss";
   el("bossCreateJobBox").style.display = isBoss ? "" : "none";
   el("bossPlasticBox").style.display = isBoss ? "" : "none";
   el("bossCatalogBox").style.display = isBoss ? "" : "none";
 
-  // โหลดข้อมูลเริ่มต้น
   await refreshAllPickers();
   await loadJobs();
   await loadPlastic();
@@ -107,30 +97,27 @@ function statusBadge(status){
 }
 
 async function refreshAllPickers(){
-  // picker วัสดุสำหรับสร้างงาน: ใช้ stock_plastic เป็นหลัก
   const plastics = await getDocs(query(collection(db, "stock_plastic"), orderBy("sku")));
-  el("matSku").innerHTML = "";
-  plastics.forEach(d=>{
-    const it = d.data();
-    const opt = document.createElement("option");
-    opt.value = it.sku;
-    opt.textContent = `${it.sku} — ${it.name} (คงเหลือ ${fmt(it.qty_on_hand)} ${it.unit})`;
-    el("matSku").appendChild(opt);
-  });
 
-  // picker plastic ใน catalog
+  el("matSku").innerHTML = "";
   el("cPlasticSku").innerHTML = "";
+
   plastics.forEach(d=>{
     const it = d.data();
-    const opt = document.createElement("option");
-    opt.value = it.sku;
-    opt.textContent = `${it.sku} — ${it.name}`;
-    el("cPlasticSku").appendChild(opt);
+    const opt1 = document.createElement("option");
+    opt1.value = it.sku;
+    opt1.textContent = `${it.sku} — ${it.name} (คงเหลือ ${fmt(it.qty_on_hand)} ${it.unit})`;
+    el("matSku").appendChild(opt1);
+
+    const opt2 = document.createElement("option");
+    opt2.value = it.sku;
+    opt2.textContent = `${it.sku} — ${it.name}`;
+    el("cPlasticSku").appendChild(opt2);
   });
 }
 
 // ---------------- JOBS ----------------
-let tempMats = []; // [{sku, qty_required}]
+let tempMats = [];
 
 el("btnAddMat").addEventListener("click", ()=>{
   const sku = el("matSku").value;
@@ -167,8 +154,7 @@ function renderTempMats(){
   el("matList").querySelectorAll("a").forEach(a=>{
     a.addEventListener("click",(e)=>{
       e.preventDefault();
-      const idx = Number(a.dataset.i);
-      tempMats.splice(idx,1);
+      tempMats.splice(Number(a.dataset.i),1);
       renderTempMats();
     });
   });
@@ -186,7 +172,6 @@ el("btnCreateJob").addEventListener("click", async ()=>{
   if(!Number.isFinite(qty) || qty<=0) return (el("jobMsg").textContent="จำนวนต้อง >0");
   if(tempMats.length===0) return (el("jobMsg").textContent="กรุณาเพิ่มวัสดุอย่างน้อย 1 รายการ");
 
-  // doc id ใช้ jobCode
   await setDoc(doc(db, "jobs", jobCode), {
     jobCode,
     thickness_mm: thick,
@@ -211,15 +196,9 @@ async function loadJobs(){
   const qText = el("qJob").value.trim().toUpperCase();
   const st = el("jobFilter").value;
 
-  // Firestore ไม่มี contains แบบง่ายกับหลาย field; เอาง่าย: โหลดตาม status ถ้ามี
   let qRef = collection(db, "jobs");
-  let qx;
-
-  if(st){
-    qx = query(qRef, where("status","==",st), orderBy("jobCode"));
-  }else{
-    qx = query(qRef, orderBy("jobCode"));
-  }
+  let qx = st ? query(qRef, where("status","==",st), orderBy("jobCode"))
+              : query(qRef, orderBy("jobCode"));
 
   const snap = await getDocs(qx);
   const rows = [];
@@ -230,24 +209,22 @@ async function loadJobs(){
   });
 
   const tb = el("jobsTable").querySelector("tbody");
-  tb.innerHTML = rows.map(j=>{
-    return `
-      <tr>
-        <td><b>${j.jobCode}</b></td>
-        <td>${fmt(j.thickness_mm)}</td>
-        <td>${j.quantity_required}</td>
-        <td>${statusBadge(j.status)}</td>
-        <td>
-          <div class="row">
-            <button class="btn" data-act="run" data-id="${j.jobCode}">RUN</button>
-            <button class="btn" data-act="cut" data-id="${j.jobCode}">CUT</button>
-            <button class="btn" data-act="pack" data-id="${j.jobCode}">PACK</button>
-            <button class="btn primary" data-act="done" data-id="${j.jobCode}">DONE</button>
-          </div>
-        </td>
-      </tr>
-    `;
-  }).join("") || `<tr><td colspan="5">ไม่พบงาน</td></tr>`;
+  tb.innerHTML = rows.map(j=>`
+    <tr>
+      <td><b>${j.jobCode}</b></td>
+      <td>${fmt(j.thickness_mm)}</td>
+      <td>${j.quantity_required}</td>
+      <td>${statusBadge(j.status)}</td>
+      <td>
+        <div class="row">
+          <button class="btn" data-act="run" data-id="${j.jobCode}">RUN</button>
+          <button class="btn" data-act="cut" data-id="${j.jobCode}">CUT</button>
+          <button class="btn" data-act="pack" data-id="${j.jobCode}">PACK</button>
+          <button class="btn primary" data-act="done" data-id="${j.jobCode}">DONE</button>
+        </div>
+      </td>
+    </tr>
+  `).join("") || `<tr><td colspan="5">ไม่พบงาน</td></tr>`;
 
   tb.querySelectorAll("button").forEach(b=>{
     b.addEventListener("click", async ()=>{
@@ -266,7 +243,6 @@ async function updateJobStatus(jobCode, status){
   await loadJobs();
 }
 
-// DONE: หัก stock_plastic ตาม materials + บันทึก stock_moves + set DONE (transaction)
 async function finishJobTransaction(jobCode){
   el("jobsMsg").textContent = "";
   if(!confirm(`ยืนยัน DONE งาน ${jobCode}? ระบบจะตัดสต็อกพลาสติกตามวัสดุที่กำหนด`)) return;
@@ -280,7 +256,7 @@ async function finishJobTransaction(jobCode){
       if(job.status === "DONE") throw new Error("งาน DONE แล้ว");
 
       const mats = Array.isArray(job.materials) ? job.materials : [];
-      // เช็ค stock พอไหม
+
       for(const m of mats){
         const sku = m.sku;
         const need = Number(m.qty_required||0);
@@ -292,7 +268,6 @@ async function finishJobTransaction(jobCode){
         if(onhand < need) throw new Error(`สต็อกไม่พอ: ${sku} (มี ${onhand}, ต้องใช้ ${need})`);
       }
 
-      // ตัดสต็อก + moves
       for(const m of mats){
         const sku = m.sku;
         const need = Number(m.qty_required||0);
@@ -305,13 +280,8 @@ async function finishJobTransaction(jobCode){
 
         const moveRef = doc(collection(db,"stock_moves"));
         tx.set(moveRef, {
-          sku,
-          type: "OUT",
-          qty: need,
-          at: serverTimestamp(),
-          userId: me.uid,
-          refJobCode: jobCode,
-          note: "consume at DONE"
+          sku, type: "OUT", qty: need, at: serverTimestamp(),
+          userId: me.uid, refJobCode: jobCode, note: "consume at DONE"
         });
       }
 
@@ -390,7 +360,6 @@ el("btnUpsertPart").addEventListener("click", async ()=>{
     sku, name, unit, qty_on_hand: qty, active:true, updatedAt: serverTimestamp()
   }, { merge:true });
 
-  // บันทึก move (audit)
   await setDoc(doc(collection(db,"stock_moves")), {
     sku, type:"ADJUST", qty, at: serverTimestamp(),
     userId: me.uid, refJobCode:null, note:"set qty_on_hand"
@@ -422,13 +391,8 @@ el("btnAdjustPart").addEventListener("click", async ()=>{
 
       const moveRef = doc(collection(db,"stock_moves"));
       tx.set(moveRef, {
-        sku,
-        type: delta>0 ? "IN" : "OUT",
-        qty: Math.abs(delta),
-        at: serverTimestamp(),
-        userId: me.uid,
-        refJobCode: null,
-        note
+        sku, type: delta>0 ? "IN" : "OUT", qty: Math.abs(delta),
+        at: serverTimestamp(), userId: me.uid, refJobCode: null, note
       });
     });
 
@@ -461,7 +425,7 @@ async function loadPart(){
   `).join("") || `<tr><td colspan="4">ไม่พบรายการ</td></tr>`;
 }
 
-// ---------------- CATALOG (boss) + upload image to Storage ----------------
+// ---------------- CATALOG (NO STORAGE): save imageUrl field ----------------
 el("btnReloadCat").addEventListener("click", loadCatalog);
 
 el("btnAddCatalog").addEventListener("click", async ()=>{
@@ -471,28 +435,22 @@ el("btnAddCatalog").addEventListener("click", async ()=>{
   const size = el("cSize").value.trim();
   const thick = Number(el("cThick").value.trim());
   const plasticSku = el("cPlasticSku").value;
-  const file = el("cFile").files && el("cFile").files[0];
+  const imageUrl = el("cImageUrl").value.trim();
 
   if(!code || !name) return (el("cMsg").textContent="กรอก code/ชื่อ");
   if(!Number.isFinite(thick) || thick<=0) return (el("cMsg").textContent="ความหนา > 0");
   if(!plasticSku) return (el("cMsg").textContent="เลือกพลาสติก");
-  if(!file) return (el("cMsg").textContent="เลือกไฟล์รูป PNG/JPG");
 
-  // 1) upload to storage
-  const path = `products/${code}/${Date.now()}_${file.name}`;
-  const r = ref(storage, path);
-  await uploadBytes(r, file);
-  const url = await getDownloadURL(r);
-
-  // 2) write catalog doc
+  // imageUrl ไม่บังคับ (ถ้าไม่ใส่ก็ได้)
   await setDoc(doc(db,"catalog", code), {
-    code, name, size, thickness_mm: thick, plasticSku,
-    imageUrl: url,
+    code, name, size,
+    thickness_mm: thick,
+    plasticSku,
+    imageUrl: imageUrl || null,
     updatedAt: serverTimestamp()
   }, { merge:true });
 
-  el("cMsg").textContent="บันทึกสินค้า + อัปโหลดรูปสำเร็จ";
-  el("cFile").value="";
+  el("cMsg").textContent="บันทึกสินค้าสำเร็จ";
   await loadCatalog();
 });
 
@@ -509,7 +467,7 @@ async function loadCatalog(){
   const tb = el("catTable").querySelector("tbody");
   tb.innerHTML = rows.map(it=>`
     <tr>
-      <td>${it.imageUrl ? `<img class="thumb" src="${it.imageUrl}" />` : "-"}</td>
+      <td>${it.imageUrl ? `<img class="thumb" src="${it.imageUrl}" />` : "—"}</td>
       <td><b>${it.code}</b></td>
       <td>${it.name}</td>
       <td>${it.size || "-"}</td>
