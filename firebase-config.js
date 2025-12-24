@@ -1,11 +1,11 @@
 // ใส่ firebaseConfig ของคุณจาก Firebase Console (Project settings -> Your apps)
 export const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyB9kw6sd8uyXQj1UlgMjG6_IxATjMJYPjw",
+  authDomain: "factory-d76ec.firebaseapp.com",
+  projectId: "factory-d76ec",
+  storageBucket: "factory-d76ec.firebasestorage.app",
+  messagingSenderId: "674988611414",
+  appId: "1:674988611414:web:6cee7572067fd7b15728f7"
 };
 
 // “ล็อกอินแบบง่าย” (คำเตือน: เก็บใน client จะถูกเห็นได้)
