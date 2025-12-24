@@ -1,5 +1,5 @@
 export const firebaseConfig = {
-  apiKey: "AIzaSyB9kw6sd8uyXQj1U1gMjG6_IXATjMJYPjw",
+  apiKey: "AIzaSyB9kw6sd8uyXQj1UlgMjG6_IxATjMJYPjw",
   authDomain: "factory-d76ec.firebaseapp.com",
   projectId: "factory-d76ec",
   messagingSenderId: "674988611414",
