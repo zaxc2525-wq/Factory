@@ -11,7 +11,7 @@
     <header class="topbar">
       <div>
         <div class="title">Factory Work & Stock</div>
-        <div class="sub">Firebase (Firestore + Storage) + GitHub Pages</div>
+        <div class="sub">Firestore + GitHub Pages (No Storage)</div>
       </div>
       <div class="who" id="who">ยังไม่ล็อกอิน</div>
     </header>
@@ -154,7 +154,7 @@
         </table>
       </div>
 
-      <!-- CATALOG -->
+      <!-- CATALOG (NO STORAGE) -->
       <div id="viewCatalog" style="display:none">
         <div class="row">
           <input id="qCat" placeholder="ค้นหา code/ชื่อ" />
@@ -162,14 +162,14 @@
         </div>
 
         <div class="row card2" id="bossCatalogBox" style="display:none">
-          <div class="w100"><b>เพิ่มสินค้า (หัวหน้าเท่านั้น)</b></div>
+          <div class="w100"><b>เพิ่มสินค้า (หัวหน้าเท่านั้น) — ใส่ URL รูปแทน</b></div>
           <input id="cCode" placeholder="Product Code เช่น PROD-0001" />
           <input id="cName" placeholder="ชื่อสินค้า" />
           <input id="cSize" placeholder="ไซส์" />
           <input id="cThick" placeholder="ความหนา (mm)" />
           <select id="cPlasticSku"></select>
-          <input id="cFile" type="file" accept="image/png,image/jpeg" />
-          <button class="btn primary" id="btnAddCatalog">บันทึก + อัปโหลดรูป</button>
+          <input id="cImageUrl" placeholder="Image URL (PNG/JPG) เช่น https://example.com/img.png" />
+          <button class="btn primary" id="btnAddCatalog">บันทึกสินค้า</button>
           <div class="msg" id="cMsg"></div>
         </div>
 
