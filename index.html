@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Factory Work & Stock</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="topbar">
+      <div>
+        <div class="title">Factory Work & Stock</div>
+        <div class="sub">Firebase (Firestore + Storage) + GitHub Pages</div>
+      </div>
+      <div class="who" id="who">ยังไม่ล็อกอิน</div>
+    </header>
+
+    <!-- LOGIN -->
+    <section class="card" id="loginCard">
+      <h2>เข้าสู่ระบบ</h2>
+      <div class="grid2">
+        <label>
+          บทบาท
+          <select id="role">
+            <option value="boss">หัวหน้า</option>
+            <option value="producer">ผู้ผลิต</option>
+          </select>
+        </label>
+
+        <label>
+          PIN
+          <input id="pin" placeholder="กรอก PIN" />
+        </label>
+      </div>
+      <div class="actions">
+        <button id="btnLogin" class="btn primary">Login</button>
+        <button id="btnLogout" class="btn">Logout</button>
+      </div>
+      <div class="msg" id="loginMsg"></div>
+    </section>
+
+    <!-- APP -->
+    <section class="card" id="appCard" style="display:none">
+      <div class="tabs">
+        <button class="tab active" data-tab="jobs">งาน</button>
+        <button class="tab" data-tab="stockPlastic">Stock พลาสติก</button>
+        <button class="tab" data-tab="stockPart">Stock ชิ้นงาน</button>
+        <button class="tab" data-tab="catalog">สินค้าทั้งหมด</button>
+      </div>
+
+      <!-- JOBS -->
+      <div id="viewJobs">
+        <div class="row">
+          <input id="qJob" placeholder="ค้นหางาน: JOB-0001" />
+          <select id="jobFilter">
+            <option value="">ทุกสถานะ</option>
+            <option value="TODO">TODO</option>
+            <option value="RUNNING">กำลังเดินงาน</option>
+            <option value="CUTTING">กำลังตัดงาน</option>
+            <option value="PACKING">กำลังแพ็คงาน</option>
+            <option value="DONE">DONE</option>
+          </select>
+          <button class="btn" id="btnReloadJobs">รีเฟรช</button>
+        </div>
+
+        <div class="row card2" id="bossCreateJobBox" style="display:none">
+          <div class="w100"><b>สร้างงาน (หัวหน้าเท่านั้น)</b></div>
+          <input id="jobCode" placeholder="รหัสงาน เช่น JOB-0002" />
+          <input id="jobThick" placeholder="ความหนาพลาสติก (mm) เช่น 0.12" />
+          <input id="jobQty" placeholder="จำนวนที่ต้องการ เช่น 5000" />
+          <textarea id="jobDesc" placeholder="รายละเอียดงาน (optional)"></textarea>
+
+          <div class="row">
+            <select id="matSku"></select>
+            <input id="matQty" placeholder="จำนวนวัสดุที่ใช้" />
+            <button class="btn" id="btnAddMat">เพิ่มวัสดุ</button>
+          </div>
+
+          <div class="matList" id="matList">ยังไม่มีรายการวัสดุ</div>
+
+          <div class="row">
+            <button class="btn primary" id="btnCreateJob">สร้างงาน</button>
+            <button class="btn" id="btnClearJob">ล้าง</button>
+          </div>
+          <div class="msg" id="jobMsg"></div>
+        </div>
+
+        <table class="table" id="jobsTable">
+          <thead>
+            <tr>
+              <th>รหัสงาน</th><th>ความหนา</th><th>จำนวน</th><th>สถานะ</th><th>จัดการ</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <div class="msg" id="jobsMsg"></div>
+      </div>
+
+      <!-- STOCK PLASTIC -->
+      <div id="viewStockPlastic" style="display:none">
+        <div class="row">
+          <input id="qPlastic" placeholder="ค้นหา SKU/ชื่อ" />
+          <button class="btn" id="btnReloadPlastic">รีเฟรช</button>
+        </div>
+
+        <div class="row card2" id="bossPlasticBox" style="display:none">
+          <div class="w100"><b>เพิ่ม/แก้ Stock พลาสติก (หัวหน้าเท่านั้น)</b></div>
+          <input id="pSku" placeholder="SKU เช่น PLASTIC-A" />
+          <input id="pName" placeholder="ชื่อ" />
+          <input id="pUnit" placeholder="หน่วย เช่น kg" />
+          <input id="pQty" placeholder="คงเหลือเริ่มต้น เช่น 100" />
+          <button class="btn primary" id="btnAddPlastic">บันทึก/อัปเดต</button>
+          <div class="msg" id="pMsg"></div>
+        </div>
+
+        <table class="table" id="plasticTable">
+          <thead>
+            <tr><th>SKU</th><th>ชื่อ</th><th>หน่วย</th><th class="r">คงเหลือ</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <!-- STOCK PART -->
+      <div id="viewStockPart" style="display:none">
+        <div class="row">
+          <input id="qPart" placeholder="ค้นหา SKU/ชื่อ" />
+          <button class="btn" id="btnReloadPart">รีเฟรช</button>
+        </div>
+
+        <div class="row card2">
+          <div class="w100"><b>เพิ่ม/ปรับ Stock ชิ้นงาน (หัวหน้า + ผู้ผลิต)</b></div>
+          <input id="sSku" placeholder="SKU เช่น PART-0001" />
+          <input id="sName" placeholder="ชื่อชิ้นงาน" />
+          <input id="sUnit" placeholder="หน่วย เช่น pcs" />
+          <input id="sQty" placeholder="คงเหลือ (ตั้งค่า) เช่น 50" />
+          <div class="row">
+            <button class="btn primary" id="btnUpsertPart">บันทึก/อัปเดต</button>
+            <button class="btn" id="btnAdjustPart">ปรับเพิ่ม/ลด</button>
+          </div>
+          <div class="row">
+            <input id="delta" placeholder="จำนวนปรับ เช่น +10 หรือ -5" />
+            <input id="deltaNote" placeholder="หมายเหตุ เช่น รับเข้า/ของเสีย" />
+          </div>
+          <div class="msg" id="sMsg"></div>
+        </div>
+
+        <table class="table" id="partTable">
+          <thead>
+            <tr><th>SKU</th><th>ชื่อ</th><th>หน่วย</th><th class="r">คงเหลือ</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <!-- CATALOG -->
+      <div id="viewCatalog" style="display:none">
+        <div class="row">
+          <input id="qCat" placeholder="ค้นหา code/ชื่อ" />
+          <button class="btn" id="btnReloadCat">รีเฟรช</button>
+        </div>
+
+        <div class="row card2" id="bossCatalogBox" style="display:none">
+          <div class="w100"><b>เพิ่มสินค้า (หัวหน้าเท่านั้น)</b></div>
+          <input id="cCode" placeholder="Product Code เช่น PROD-0001" />
+          <input id="cName" placeholder="ชื่อสินค้า" />
+          <input id="cSize" placeholder="ไซส์" />
+          <input id="cThick" placeholder="ความหนา (mm)" />
+          <select id="cPlasticSku"></select>
+          <input id="cFile" type="file" accept="image/png,image/jpeg" />
+          <button class="btn primary" id="btnAddCatalog">บันทึก + อัปโหลดรูป</button>
+          <div class="msg" id="cMsg"></div>
+        </div>
+
+        <table class="table" id="catTable">
+          <thead>
+            <tr><th>รูป</th><th>Code</th><th>ชื่อ</th><th>ไซส์</th><th>ความหนา</th><th>พลาสติก</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
