@@ -36,7 +36,7 @@ function showTab(tab){
 }
 
 // ---------------- Login ----------------
-el("btnLogin").addEventListener("click", async ()=>{
+el("btnLogin").addEventListener("click", async () => {
   el("loginMsg").textContent = "";
   const role = el("role").value;
   const pin = el("pin").value.trim();
@@ -46,15 +46,26 @@ el("btnLogin").addEventListener("click", async ()=>{
     return;
   }
 
-  const cred = await signInAnonymously(auth);
+  try {
+    const cred = await signInAnonymously(auth);
 
-  const name = role === "boss" ? "หัวหน้า" : "ผู้ผลิต";
-  await setDoc(doc(db, "users", cred.user.uid), {
-    role, name, updatedAt: serverTimestamp()
-  }, { merge:true });
+    const name = role === "boss" ? "หัวหน้า" : "ผู้ผลิต";
+    await setDoc(doc(db, "users", cred.user.uid), {
+      role,
+      name,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
 
-  el("pin").value = "";
+    el("loginMsg").textContent = "Login สำเร็จ";
+    el("pin").value = "";
+
+  } catch (err) {
+    console.error(err);
+    el("loginMsg").textContent =
+      `Login ไม่สำเร็จ: ${err.code || ""} ${err.message || err}`;
+  }
 });
+
 
 el("btnLogout").addEventListener("click", ()=>signOut(auth));
 
